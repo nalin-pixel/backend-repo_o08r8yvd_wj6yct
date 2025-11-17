@@ -1,8 +1,11 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field, EmailStr
+from typing import List
+from database import create_document
 
-app = FastAPI()
+app = FastAPI(title="Mad Over Italian - Event API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,11 +17,46 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello from FastAPI Backend!"}
+    return {"message": "Mad Over Italian Event Backend Running"}
 
-@app.get("/api/hello")
-def hello():
-    return {"message": "Hello from the backend API!"}
+# Models for request/response
+class TicketRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
+    quantity: int = Field(1, ge=1, le=10)
+    notes: str | None = Field(None, max_length=500)
+
+class TicketResponse(BaseModel):
+    success: bool
+    order_id: str
+    total_amount: float
+
+TICKET_PRICE = 10.0
+
+@app.post("/api/tickets", response_model=TicketResponse)
+def create_ticket_purchase(payload: TicketRequest):
+    # Calculate total
+    total = round(TICKET_PRICE * payload.quantity, 2)
+
+    # Persist to DB
+    try:
+        order_id = create_document(
+            "ticketpurchase",
+            {
+                "name": payload.name,
+                "email": payload.email,
+                "quantity": payload.quantity,
+                "amount": total,
+                "notes": payload.notes,
+                "event": "Mad Over Italian Store Opening Tasting",
+                "status": "confirmed",
+                "currency": "AUD",
+            },
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return TicketResponse(success=True, order_id=order_id, total_amount=total)
 
 @app.get("/test")
 def test_database():

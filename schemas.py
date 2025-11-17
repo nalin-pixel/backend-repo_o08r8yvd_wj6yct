@@ -11,10 +11,10 @@ Model name is converted to lowercase for the collection name:
 - BlogPost -> "blogs" collection
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
 
-# Example schemas (replace with your own):
+# Example schemas (retain as references):
 
 class User(BaseModel):
     """
@@ -22,7 +22,7 @@ class User(BaseModel):
     Collection name: "user" (lowercase of class name)
     """
     name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
+    email: EmailStr = Field(..., description="Email address")
     address: str = Field(..., description="Address")
     age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
     is_active: bool = Field(True, description="Whether user is active")
@@ -38,7 +38,20 @@ class Product(BaseModel):
     category: str = Field(..., description="Product category")
     in_stock: bool = Field(True, description="Whether product is in stock")
 
-# Add your own schemas here:
+# Event/Ticketing schemas for the Mad Over Italian tasting event
+
+class TicketPurchase(BaseModel):
+    """
+    Ticket purchases collection schema
+    Collection name: "ticketpurchase" (lowercase of class name)
+    """
+    name: str = Field(..., min_length=2, max_length=100, description="Purchaser full name")
+    email: EmailStr = Field(..., description="Purchaser email address")
+    quantity: int = Field(1, ge=1, le=10, description="Number of tickets")
+    amount: float = Field(..., ge=0, description="Total amount charged in AUD")
+    notes: Optional[str] = Field(None, max_length=500, description="Optional note or dietary info")
+
+# Add additional schemas as needed below
 # --------------------------------------------------
 
 # Note: The Flames database viewer will automatically:
